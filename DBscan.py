@@ -3,142 +3,55 @@ from sklearn.preprocessing import RobustScaler
 from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
-
-
-data = pd.read_csv('../DATASET/Hasil_Gabungan.csv')
-
-
-features = ['Residential_2021', 'Business_2021', 'Industrial_2021', 'Social_2021', 'Gov_Office_2021', 'Pub_Street_2021', 'Total_2021', 'JP_2021', 'KP_2021']
-
-data_T2021 = data[features]
-scaler = RobustScaler()
-scaled_features = scaler.fit_transform(data_T2021)
-
-neighbors = NearestNeighbors(n_neighbors=5)
-neighbors_fit = neighbors.fit(scaled_features)
-distances, indices = neighbors_fit.kneighbors(scaled_features)
-
-distances = sorted(distances[:,4], reverse=True)
-
-plt.figure(figsize=(12, 8))
-plt.plot(distances, color='orange', linestyle='-', marker='o', markersize=5)
-plt.title("K-Distance Graph", fontsize=16)
-plt.xlabel("Data Points", fontsize=14)
-plt.ylabel("Distance to 5th Nearest Neighbor", fontsize=14)
-plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-plt.xticks(fontsize=12)
-plt.yticks(fontsize=12)
-
-plt.legend()
-
-plt.show()
-
-dbscan = DBSCAN(eps=6, min_samples=16)
-clusters = dbscan.fit_predict(scaled_features)
-data['Cluster'] = clusters
-
-provinsi_cluster = data[['Province', 'Cluster']]
-
-for cluster in set(clusters):
-    print(f"\nProvinsi yang masuk dalam Cluster {cluster}:")
-    print(provinsi_cluster[provinsi_cluster['Cluster'] == cluster]['Province'].to_list())
-
-
-num_clusters = len(set(clusters)) - (1 if -1 in clusters else 0)  
-num_outliers = list(clusters).count(-1)  
-
-print(f"\nJumlah cluster yang ditemukan: {num_clusters}")
-print(f"Jumlah outlier: {num_outliers}")
-
-features = ['Residential_2022', 'Business_2022', 'Industrial_2022', 'Social_2022', 'Gov_Office_2022', 'Pub_Street_2022', 'Total_2022', 'JP_2022', 'KP_2022']
-
-data_T2022 = data[features]
-
-robust_scaler2 = RobustScaler()
-data_scaled_2022 = robust_scaler2.fit_transform(data_T2022)
-
-neighbors2 = NearestNeighbors(n_neighbors=5)
-neighbors_fit2 = neighbors2.fit(data_scaled_2022)
-distances2, indices = neighbors_fit2.kneighbors(data_scaled_2022)
-
-distances2 = sorted(distances2[:,4], reverse=True)
-
-plt.figure(figsize=(12, 8))
-plt.plot(distances2, color='orange', linestyle='-', marker='o', markersize=5)
-plt.title("K-Distance Graph", fontsize=16)
-plt.xlabel("Data Points", fontsize=14)
-plt.ylabel("Distance to 5th Nearest Neighbor", fontsize=14)
-plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-plt.xticks(fontsize=12)
-plt.yticks(fontsize=12)
-
-plt.legend()
-
-plt.show()
-
-dbscan2 = DBSCAN(eps=6, min_samples=16)
-clusters2 = dbscan2.fit_predict(data_scaled_2022)
-data['Cluster'] = clusters2
-
-provinsi_cluster2 = data[['Province', 'Cluster']]
-
-for cluster in set(clusters2):
-    print(f"\nProvinsi yang masuk dalam Cluster {cluster}:")
-    print(provinsi_cluster2[provinsi_cluster2['Cluster'] == cluster]['Province'].to_list())
-
-
-num_clusters = len(set(clusters)) - (1 if -1 in clusters else 0)  
-num_outliers = list(clusters).count(-1)  
-
-print(f"\nJumlah cluster yang ditemukan: {num_clusters}")
-print(f"Jumlah outlier: {num_outliers}")
-
-features = ['Residential', 'Business', 'Industrial', 'Social', 'Gov_Office', 'Pub_Street', 'Total', 'JP_2023', 'KP_2023']
-
-data_T2023 = data[features]
-
-robust_scaler3 = RobustScaler()
-data_scaled_2023 = robust_scaler3.fit_transform(data_T2023)
-
-neighbors3 = NearestNeighbors(n_neighbors=5)
-neighbors_fit3 = neighbors3.fit(data_scaled_2023)
-distances3, indices = neighbors_fit3.kneighbors(data_scaled_2023)
-
-distances3 = sorted(distances3[:,4], reverse=True)
-
-plt.figure(figsize=(12, 8))
-plt.plot(distances3, color='orange', linestyle='-', marker='o', markersize=5)
-plt.title("K-Distance Graph", fontsize=16)
-plt.xlabel("Data Points", fontsize=14)
-plt.ylabel("Distance to 5th Nearest Neighbor", fontsize=14)
-plt.grid(True, which='both', linestyle='--', linewidth=0.5)
-plt.xticks(fontsize=12)
-plt.yticks(fontsize=12)
-
-plt.legend()
-
-plt.show()
-
-dbscan3 = DBSCAN(eps=6, min_samples=16)
-
-clusters3 = dbscan3.fit_predict(data_scaled_2023)
-data['Cluster'] = clusters3
-
-provinsi_cluster3 = data[['Province', 'Cluster']]
-
-for cluster in set(clusters3):
-    print(f"\nProvinsi yang masuk dalam Cluster {cluster}:")
-    print(provinsi_cluster3[provinsi_cluster3['Cluster'] == cluster]['Province'].to_list())
-
-
-num_clusters = len(set(clusters)) - (1 if -1 in clusters else 0)  
-num_outliers = list(clusters).count(-1)  
-
-print(f"\nJumlah cluster yang ditemukan: {num_clusters}")
-print(f"Jumlah outlier: {num_outliers}")
-
+import numpy as np
+from sklearn.metrics import silhouette_score
+import seaborn as sns
+from sklearn.manifold import TSNE
 import leafmap as lf
 import geopandas as gpd
+data = pd.read_csv('../DATASET/Hasil_Gabungan.csv')
+
+featuress = [
+    'Residential_2021', 'Industrial_2021', 'Business_2021', 'Social_2021', 'Gov_Office_2021', 
+    'Pub_Street_2021', 'Total_2021', 'Residential_2022', 'Industrial_2022', 'Business_2022', 
+    'Social_2022', 'Gov_Office_2022', 'Pub_Street_2022', 'Total_2022', 'Residential', 
+    'Industrial', 'Business', 'Social', 'Gov_Office', 'Pub_Street', 'Total', 
+    'JP_2021', 'JP_2022', 'JP_2023', 'KP_2021', 'KP_2022', 'KP_2023'
+]
+
+data_T = data[featuress]
+scaler = RobustScaler()
+scaled_features = scaler.fit_transform(data_T)
+
+
+dbscan = DBSCAN(eps=9, min_samples=16)
+clusters = dbscan.fit_predict(scaled_features)
+
+data['Cluster'] = clusters
+
+for cluster_id in sorted(set(clusters)):
+    provinsi = data[data['Cluster'] == cluster_id]['Province'].tolist()
+    if cluster_id == -1:
+        print("\nOutlier:")
+    else:
+        print(f"\nCluster {cluster_id}:")
+    print(provinsi)
+
+valid_mask = clusters != -1
+if len(set(clusters[valid_mask])) > 1 and valid_mask.sum() > 1:
+    sil_score_no_outliers = silhouette_score(
+        scaled_features[valid_mask], clusters[valid_mask]
+    )
+    print(f"\nSilhouette Score (tanpa outliers): {sil_score_no_outliers:}")
+else:
+    print("\nSilhouette Score (tanpa outliers) tidak dapat dihitung.")
+
+if len(set(clusters)) > 1:
+    sil_score_with_outliers = silhouette_score(scaled_features, clusters)
+    print(f"Silhouette Score (dengan outliers): {sil_score_with_outliers:}")
+else:
+    print("Silhouette Score (dengan outliers) tidak dapat dihitung.")
+
 
 geo_data = gpd.read_file('../DATASET/id.json')
 
